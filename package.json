@@ -2,7 +2,11 @@
   "name": "sdm-pack-pulumi",
   "version": "0.1.0",
   "description": "my new project",
-  "author": "cdupuis",
+  "author": {
+    "name": "Atomist",
+    "email": "support@atomist.com",
+    "url": "https://atomist.com/"
+  },
   "license": "Apache-2.0",
   "homepage": "https://github.com/atomist/sdm-pack-pulumi#readme",
   "repository": {
