@@ -15,16 +15,25 @@
  */
 
 import {
+    NoParameters,
     spawnAndWatch,
     SuccessIsReturn0ErrorFinder,
 } from "@atomist/automation-client";
 import {
+    CodeTransform,
     DefaultGoalNameGenerator,
     ExecuteGoal,
     FulfillableGoalDetails,
     getGoalDefinitionFrom,
     Goal,
     GoalWithFulfillment,
+    IndependentOfEnvironment,
+    ProductionEnvironment,
+    PushAwareParametersInvocation,
+    PushListenerInvocation,
+    PushTest,
+    SdmGoalEvent,
+    StagingEnvironment,
     StringCapturingProgressLog,
     WriteToAllProgressLog,
 } from "@atomist/sdm";
@@ -32,19 +41,34 @@ import * as path from "path";
 
 export interface PulumiOptions {
     token: string;
-    stack: string;
-
-    // TODO cd add ability to throw in a stack
+    stack?: (goal: SdmGoalEvent) => string;
+    transforms?: Array<{ transform: CodeTransform<NoParameters>, pushTest?: PushTest }>;
 }
+
+const DefaultPulumiOptions: Partial<PulumiOptions> = {
+    stack: g => {
+        switch (g.environment) {
+            case IndependentOfEnvironment:
+                return g.repo.name;
+            case StagingEnvironment:
+                return `${g.repo.name}-tessting`;
+            case ProductionEnvironment:
+                return `${g.repo.name}-production`;
+            default:
+                // We still have this oddity about env names starting with number-
+                return `${g.repo.name}-${g.environment.split("-")[1]}`;
+        }
+    },
+    transforms: [],
+};
 
 export class PulumiUp extends GoalWithFulfillment {
 
-    constructor(public readonly options: PulumiOptions,
-                public readonly details?: FulfillableGoalDetails,
+    constructor(public readonly options?: FulfillableGoalDetails & PulumiOptions,
                 ...dependsOn: Goal[]) {
 
         super({
-            ...getGoalDefinitionFrom(details, DefaultGoalNameGenerator.generateName("pulumi-up")),
+            ...getGoalDefinitionFrom(options, DefaultGoalNameGenerator.generateName("pulumi-up")),
             displayName: `pulumi up \`${options.stack}\``,
             workingDescription: `pulumi up \`${options.stack}\` running`,
             completedDescription: `pulumi up \`${options.stack}\` completed`,
@@ -61,10 +85,51 @@ export class PulumiUp extends GoalWithFulfillment {
 
 function executePulumiUp(options: PulumiOptions): ExecuteGoal {
     return async gi => {
-        const { credentials, id, goal, progressLog, configuration } = gi;
-        return configuration.sdm.projectLoader.doWithProject({ credentials, id, readOnly: true }, async p => {
 
-            if (!(await p.hasFile(".pulumi/Pulumi.yaml"))) {
+        const { credentials, id, sdmGoal, goal, progressLog, configuration, context, addressChannels } = gi;
+        const optsToUse: PulumiOptions = {
+            ...DefaultPulumiOptions,
+            ...options,
+        };
+
+        return configuration.sdm.projectLoader.doWithProject({ credentials, id, readOnly: true }, async project => {
+
+            if (optsToUse.transforms && optsToUse.transforms.length > 0) {
+                const pli: PushListenerInvocation = {
+                    context,
+                    addressChannels,
+                    credentials,
+                    project,
+                    id,
+                    push: sdmGoal.push,
+                };
+
+                const papi: PushAwareParametersInvocation<NoParameters> = {
+                    credentials,
+                    addressChannels,
+                    context,
+                    parameters: [],
+                    push: {
+                        context,
+                        addressChannels,
+                        credentials,
+                        push: sdmGoal.push,
+                        id,
+                        project,
+                        filesChanged: [],
+                        commit: undefined,
+                        impactedSubProject: undefined,
+                    },
+                };
+
+                for (const transform of optsToUse.transforms) {
+                    if (!transform.pushTest || (await transform.pushTest.mapping(pli))) {
+                        await transform.transform(project, papi);
+                    }
+                }
+            }
+
+            if (!(await project.hasFile(".pulumi/Pulumi.yaml"))) {
                 progressLog.write("No pulumi application found in project");
                 return {
                     code: 1,
@@ -80,7 +145,7 @@ function executePulumiUp(options: PulumiOptions): ExecuteGoal {
                     args: ["install"],
                 },
                 {
-                    cwd: path.join(p.baseDir, ".pulumi"),
+                    cwd: path.join(project.baseDir, ".pulumi"),
                 },
                 progressLog,
                 {
@@ -92,17 +157,19 @@ function executePulumiUp(options: PulumiOptions): ExecuteGoal {
                 return result;
             }
 
-            progressLog.write(`Running 'pulumi up' for stack '${p.name}-${options.stack}'`);
+            const stack = optsToUse.stack(sdmGoal);
+
+            progressLog.write(`Running 'pulumi up' for stack '${stack}'`);
             const log = new StringCapturingProgressLog();
             result = await spawnAndWatch({
                     command: "pulumi",
-                    args: ["up", "--non-interactive", "--stack", `${p.name}-${options.stack}`],
+                    args: ["up", "--non-interactive", "--stack", `${stack}`],
                 },
                 {
-                    cwd: path.join(p.baseDir, ".pulumi"),
+                    cwd: path.join(project.baseDir, ".pulumi"),
                     env: {
                         ...process.env,
-                        PULUMI_ACCESS_TOKEN: options.token,
+                        PULUMI_ACCESS_TOKEN: optsToUse.token,
                     },
                 },
                 new WriteToAllProgressLog("pulumi up", log, progressLog),
