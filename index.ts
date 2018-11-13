@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-export { SeedSupport } from "./lib/pulumi";
+export { PulumiOptions, PulumiUp } from "./lib/PulumiUp";
