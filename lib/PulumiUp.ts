@@ -44,7 +44,6 @@ import {
 import * as path from "path";
 
 export interface PulumiOptions {
-    token: string;
     stack?: (goal: SdmGoalEvent) => string;
     transforms?: Array<{ transform: CodeTransform<NoParameters>, pushTest?: PushTest }>;
 }
@@ -164,6 +163,14 @@ function executePulumiUp(options: PulumiOptions): ExecuteGoal {
             }
 
             const stack = optsToUse.stack(sdmGoal);
+            const token = configuration.sdm.pulumi.token;
+            if (!token) {
+                progressLog.write("No Pulumi access token in 'sdm.pulumi.token'");
+                return {
+                    code: 1,
+                    message: "No Pulumi access token in 'sdm.pulumi.token'",
+                };
+            }
 
             progressLog.write(`Running 'pulumi up' for stack '${stack}'`);
             const log = new StringCapturingProgressLog();
@@ -175,7 +182,7 @@ function executePulumiUp(options: PulumiOptions): ExecuteGoal {
                     cwd: path.join(project.baseDir, ".pulumi"),
                     env: {
                         ...process.env,
-                        PULUMI_ACCESS_TOKEN: optsToUse.token,
+                        PULUMI_ACCESS_TOKEN: token,
                     },
                 },
                 new WriteToAllProgressLog("pulumi up", log, progressLog),
