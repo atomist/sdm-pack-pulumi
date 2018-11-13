@@ -28,13 +28,17 @@ import {
     Goal,
     GoalWithFulfillment,
     IndependentOfEnvironment,
+    LogSuppressor,
     ProductionEnvironment,
+    ProgressTest,
     PushAwareParametersInvocation,
     PushListenerInvocation,
     PushTest,
+    ReportProgress,
     SdmGoalEvent,
     StagingEnvironment,
     StringCapturingProgressLog,
+    testProgressReporter,
     WriteToAllProgressLog,
 } from "@atomist/sdm";
 import * as path from "path";
@@ -79,6 +83,8 @@ export class PulumiUp extends GoalWithFulfillment {
         this.addFulfillment({
             name: `pulumi-up-${this.definition.uniqueName}`,
             goalExecutor: executePulumiUp(options),
+            logInterpreter: LogSuppressor,
+            progressReporter: PulumiProgressReporter,
         });
     }
 }
@@ -193,3 +199,13 @@ function executePulumiUp(options: PulumiOptions): ExecuteGoal {
         });
     };
 }
+
+export const PulumiProgressTests: ProgressTest[] = [{
+    test: /Invoking goal hook: pre/i,
+    phase: "pre-hook",
+}, {
+    test: /Invoking goal hook: post/i,
+    phase: "post-hook",
+}];
+
+export const PulumiProgressReporter: ReportProgress = testProgressReporter(...PulumiProgressTests);
