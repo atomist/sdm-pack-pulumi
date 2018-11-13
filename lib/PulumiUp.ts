@@ -51,7 +51,7 @@ const DefaultPulumiOptions: Partial<PulumiOptions> = {
             case IndependentOfEnvironment:
                 return g.repo.name;
             case StagingEnvironment:
-                return `${g.repo.name}-tessting`;
+                return `${g.repo.name}-testing`;
             case ProductionEnvironment:
                 return `${g.repo.name}-production`;
             default:
