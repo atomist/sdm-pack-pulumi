@@ -24,16 +24,17 @@ import {
     DefaultGoalNameGenerator,
     ExecuteGoal,
     FulfillableGoalDetails,
+    FulfillableGoalWithRegistrations,
+    FulfillmentRegistration,
     getGoalDefinitionFrom,
     Goal,
-    GoalWithFulfillment,
+    GoalEnvironment,
     IndependentOfEnvironment,
     LogSuppressor,
     ProductionEnvironment,
     ProgressTest,
     PushAwareParametersInvocation,
     PushListenerInvocation,
-    PushTest,
     ReportProgress,
     SdmGoalEvent,
     StagingEnvironment,
@@ -43,12 +44,13 @@ import {
 } from "@atomist/sdm";
 import * as path from "path";
 
-export interface PulumiOptions {
+export interface PulumiUpRegistration extends FulfillmentRegistration {
     stack?: (goal: SdmGoalEvent) => string;
-    transforms?: Array<{ transform: CodeTransform<NoParameters>, pushTest?: PushTest }>;
+    transform?: CodeTransform<NoParameters>;
+    token?: string;
 }
 
-const DefaultPulumiOptions: Partial<PulumiOptions> = {
+const DefaultPulumiOptions: Partial<PulumiUpRegistration> = {
     stack: g => {
         switch (g.environment) {
             case IndependentOfEnvironment:
@@ -62,44 +64,47 @@ const DefaultPulumiOptions: Partial<PulumiOptions> = {
                 return `${g.repo.name}-${g.environment.split("-")[1]}`;
         }
     },
-    transforms: [],
 };
 
-export class PulumiUp extends GoalWithFulfillment {
+export class PulumiUp extends FulfillableGoalWithRegistrations<PulumiUpRegistration> {
 
-    constructor(public readonly options?: FulfillableGoalDetails & PulumiOptions,
+    constructor(public readonly options?: FulfillableGoalDetails,
                 ...dependsOn: Goal[]) {
 
         super({
             ...getGoalDefinitionFrom(options, DefaultGoalNameGenerator.generateName("pulumi-up")),
-            displayName: `pulumi up \`${options.stack}\``,
-            workingDescription: `pulumi up \`${options.stack}\` running`,
-            completedDescription: `pulumi up \`${options.stack}\` completed`,
-            failedDescription: `pulumi up \`${options.stack}\` failed`,
+            displayName: `pulumi up${environmentFromDetails(options.environment)}`,
+            workingDescription: `pulumi up${environmentFromDetails(options.environment)} running`,
+            completedDescription: `pulumi up${environmentFromDetails(options.environment)} completed`,
+            failedDescription: `pulumi up${environmentFromDetails(options.environment)} failed`,
             isolated: true,
         }, ...dependsOn);
+    }
 
+    public with(registration: PulumiUpRegistration): this {
         this.addFulfillment({
-            name: `pulumi-up-${this.definition.uniqueName}`,
-            goalExecutor: executePulumiUp(options),
+            name: registration.name,
+            goalExecutor: executePulumiUp(registration),
             logInterpreter: LogSuppressor,
             progressReporter: PulumiProgressReporter,
+            pushTest: registration.pushTest,
         });
+        return this;
     }
 }
 
-function executePulumiUp(options: PulumiOptions): ExecuteGoal {
+function executePulumiUp(options: PulumiUpRegistration): ExecuteGoal {
     return async gi => {
 
         const { credentials, id, sdmGoal, goal, progressLog, configuration, context, addressChannels } = gi;
-        const optsToUse: PulumiOptions = {
+        const optsToUse: PulumiUpRegistration = {
             ...DefaultPulumiOptions,
             ...options,
         };
 
         return configuration.sdm.projectLoader.doWithProject({ credentials, id, readOnly: true }, async project => {
 
-            if (optsToUse.transforms && optsToUse.transforms.length > 0) {
+            if (optsToUse.transform) {
                 const pli: PushListenerInvocation = {
                     context,
                     addressChannels,
@@ -127,10 +132,8 @@ function executePulumiUp(options: PulumiOptions): ExecuteGoal {
                     },
                 };
 
-                for (const transform of optsToUse.transforms) {
-                    if (!transform.pushTest || (await transform.pushTest.mapping(pli))) {
-                        await transform.transform(project, papi);
-                    }
+                if (!optsToUse.pushTest || (await optsToUse.pushTest.mapping(pli))) {
+                    await optsToUse.transform(project, papi);
                 }
             }
 
@@ -163,7 +166,7 @@ function executePulumiUp(options: PulumiOptions): ExecuteGoal {
             }
 
             const stack = optsToUse.stack(sdmGoal);
-            const token = configuration.sdm.pulumi.token;
+            const token = optsToUse.token || configuration.sdm.pulumi.token;
             if (!token) {
                 progressLog.write("No Pulumi access token in 'sdm.pulumi.token'");
                 return {
@@ -216,3 +219,17 @@ export const PulumiProgressTests: ProgressTest[] = [{
 }];
 
 export const PulumiProgressReporter: ReportProgress = testProgressReporter(...PulumiProgressTests);
+
+function environmentFromDetails(environment: GoalEnvironment | string): string {
+    switch (environment) {
+        case IndependentOfEnvironment:
+            return "";
+        case StagingEnvironment:
+            return " `testing`";
+        case ProductionEnvironment:
+            return " `production`";
+        default:
+            // We still have this oddity about env names starting with number-
+            return ` \`${environment.split("-")[1]}\``;
+    }
+}

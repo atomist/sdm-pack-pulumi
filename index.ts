@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-export { PulumiOptions, PulumiUp } from "./lib/PulumiUp";
+export { PulumiUpRegistration, PulumiUp } from "./lib/PulumiUp";
