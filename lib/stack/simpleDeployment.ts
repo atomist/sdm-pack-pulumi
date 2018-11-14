@@ -106,12 +106,14 @@ const deployment = new k8s.apps.v1.Deployment(name, {
     };
 }
 
-export async function applySimpleDeployment(p: GitProject, sdmGoal: SdmGoalEvent, env: string): Promise<GitProject> {
-    await p.addFile(pulumiYaml(p.name).name, pulumiYaml(p.name).contents);
-    await p.addFile(packageJson(p.name).name, packageJson(p.name).contents);
-    await p.addFile(tsconfigJson(p.name).name, tsconfigJson(p.name).contents);
-    await p.addFile(
-        indexTs(p.name, env, sdmGoal.push.after.image.imageName).name,
-        indexTs(p.name, env, sdmGoal.push.after.image.imageName).contents);
-    return p;
+export function applySimpleDeployment(env: string): (project: GitProject, sdmGoal: SdmGoalEvent) => Promise<GitProject> {
+    return async (p, g) => {
+        await p.addFile(pulumiYaml(p.name).name, pulumiYaml(p.name).contents);
+        await p.addFile(packageJson(p.name).name, packageJson(p.name).contents);
+        await p.addFile(tsconfigJson(p.name).name, tsconfigJson(p.name).contents);
+        await p.addFile(
+            indexTs(p.name, env, g.push.after.image.imageName).name,
+            indexTs(p.name, env, g.push.after.image.imageName).contents);
+        return p;
+    };
 }
