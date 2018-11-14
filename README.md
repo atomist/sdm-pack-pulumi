@@ -8,7 +8,7 @@
 [![npm version](https://img.shields.io/npm/v/@atomist/sdm-pack-pulumi.svg)](https://www.npmjs.com/package/@atomist/sdm-pack-pulumi)
 
 An extension pack for an [Atomist][atomist] software delivery machine (SDM) to
-integrate with [Pulumi][pulumi] to automation management of cloud infrastructure.
+integrate with [Pulumi][pulumi] to automate creation and management of cloud infrastructure.
 
 Software delivery machines enable you to control your delivery process
 in code.  Think of it as an API for your software delivery.  See the
@@ -17,16 +17,24 @@ concept of a software delivery machine and how to create and develop
 an SDM.
 
 [atomist-doc]: https://docs.atomist.com/ (Atomist Documentation)
-[pulumi]: https://pulumi.com (Pulumi))
+[pulumi]: https://pulumi.com (Pulumi)
 
 ## Getting started
 
-See the [Developer Quick Start][atomist-quick] to jump straight to
-creating an SDM.
+Schedule the `PulumiUp` as show in the following snipped:
 
-// tba
-
-[atomist-quick]: https://docs.atomist.com/quick-start/ (Atomist - Developer Quick Start)
+```typescript
+const deployment = new PulumiUp({
+        environment: StagingEnvironment,
+    });
+    
+    deployment.with({
+        name: "staging-deployment",
+        token: sdm.configuration.sdm.pulumi.token,
+        stack: goal => `${goal.repo.name}-testing`,
+        transform: applySimpleDeployment("testing"),
+    });
+```
 
 ## Contributing
 
