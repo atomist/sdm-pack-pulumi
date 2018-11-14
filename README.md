@@ -4,7 +4,7 @@
 
 # @atomist/sdm-pack-pulumi
 
-[![atomist sdm goals](http://badge.atomist.com/T29E48P34/atomist/sdm-pack-pulumi/a3b1ed5f-1d12-4d5c-a301-cb5dda1bf86c)](https://app.atomist.com/workspace/T29E48P34)
+[![atomist sdm goals](http://badge.atomist.com/T29E48P34/atomist/sdm-pack-pulumi/f5958b6e-b785-40c7-839d-52fb87c75351)](https://app.atomist.com/workspace/T29E48P34)
 [![npm version](https://img.shields.io/npm/v/@atomist/sdm-pack-pulumi.svg)](https://www.npmjs.com/package/@atomist/sdm-pack-pulumi)
 
 An extension pack for an [Atomist][atomist] software delivery machine (SDM) to
