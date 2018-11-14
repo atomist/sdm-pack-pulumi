@@ -26,14 +26,14 @@ Schedule the `PulumiUp` as show in the following snipped:
 ```typescript
 const deployment = new PulumiUp({
         environment: StagingEnvironment,
-    });
-    
-    deployment.with({
-        name: "staging-deployment",
-        token: sdm.configuration.sdm.pulumi.token,
-        stack: goal => `${goal.repo.name}-testing`,
-        transform: applySimpleDeployment("testing"),
-    });
+});
+
+deployment.with({
+    name: "staging-deployment",
+    token: sdm.configuration.sdm.pulumi.token,
+    stack: goal => `${goal.repo.name}-testing`,
+    transform: applySimpleDeployment("testing"),
+});
 ```
 
 ## Contributing
