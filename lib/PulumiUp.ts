@@ -32,7 +32,6 @@ import {
     LogSuppressor,
     ProductionEnvironment,
     ProgressTest,
-    PushListenerInvocation,
     ReportProgress,
     SdmGoalEvent,
     StagingEnvironment,
