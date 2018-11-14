@@ -14,4 +14,8 @@
  * limitations under the License.
  */
 
-export { PulumiUpRegistration, PulumiUp } from "./lib/PulumiUp";
+export { applySimpleDeployment } from "./lib/stack/simpleDeployment";
+export {
+    PulumiUpRegistration,
+    PulumiUp,
+} from "./lib/PulumiUp";

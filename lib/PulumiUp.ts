@@ -15,12 +15,11 @@
  */
 
 import {
-    NoParameters,
+    GitProject,
     spawnAndWatch,
     SuccessIsReturn0ErrorFinder,
 } from "@atomist/automation-client";
 import {
-    CodeTransform,
     DefaultGoalNameGenerator,
     ExecuteGoal,
     FulfillableGoalDetails,
@@ -33,7 +32,6 @@ import {
     LogSuppressor,
     ProductionEnvironment,
     ProgressTest,
-    PushAwareParametersInvocation,
     PushListenerInvocation,
     ReportProgress,
     SdmGoalEvent,
@@ -46,7 +44,7 @@ import * as path from "path";
 
 export interface PulumiUpRegistration extends FulfillmentRegistration {
     stack?: (goal: SdmGoalEvent) => string;
-    transform?: CodeTransform<NoParameters>;
+    transform?: (project: GitProject, sdmGoal: SdmGoalEvent) => Promise<GitProject>;
     token?: string;
 }
 
@@ -114,26 +112,8 @@ function executePulumiUp(options: PulumiUpRegistration): ExecuteGoal {
                     push: sdmGoal.push,
                 };
 
-                const papi: PushAwareParametersInvocation<NoParameters> = {
-                    credentials,
-                    addressChannels,
-                    context,
-                    parameters: [],
-                    push: {
-                        context,
-                        addressChannels,
-                        credentials,
-                        push: sdmGoal.push,
-                        id,
-                        project,
-                        filesChanged: [],
-                        commit: undefined,
-                        impactedSubProject: undefined,
-                    },
-                };
-
                 if (!optsToUse.pushTest || (await optsToUse.pushTest.mapping(pli))) {
-                    await optsToUse.transform(project, papi);
+                    await optsToUse.transform(project, sdmGoal);
                 }
             }
 

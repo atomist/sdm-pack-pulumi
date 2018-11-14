@@ -106,7 +106,7 @@ const deployment = new k8s.apps.v1.Deployment(name, {
     };
 }
 
-export async function applyStack(p: GitProject, sdmGoal: SdmGoalEvent, env: string): Promise<GitProject> {
+export async function applySimpleDeployment(p: GitProject, sdmGoal: SdmGoalEvent, env: string): Promise<GitProject> {
     await p.addFile(pulumiYaml(p.name).name, pulumiYaml(p.name).contents);
     await p.addFile(packageJson(p.name).name, packageJson(p.name).contents);
     await p.addFile(tsconfigJson(p.name).name, tsconfigJson(p.name).contents);
