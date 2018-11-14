@@ -94,7 +94,7 @@ export class PulumiUp extends FulfillableGoalWithRegistrations<PulumiUpRegistrat
 function executePulumiUp(options: PulumiUpRegistration): ExecuteGoal {
     return async gi => {
 
-        const { credentials, id, sdmGoal, goal, progressLog, configuration, context, addressChannels } = gi;
+        const { credentials, id, sdmGoal, goal, progressLog, configuration } = gi;
         const optsToUse: PulumiUpRegistration = {
             ...DefaultPulumiOptions,
             ...options,
@@ -103,18 +103,8 @@ function executePulumiUp(options: PulumiUpRegistration): ExecuteGoal {
         return configuration.sdm.projectLoader.doWithProject({ credentials, id, readOnly: true }, async project => {
 
             if (optsToUse.transform) {
-                const pli: PushListenerInvocation = {
-                    context,
-                    addressChannels,
-                    credentials,
-                    project,
-                    id,
-                    push: sdmGoal.push,
-                };
-
-                if (!optsToUse.pushTest || (await optsToUse.pushTest.mapping(pli))) {
-                    await optsToUse.transform(project, sdmGoal);
-                }
+                progressLog.write(`Running code transform to add pulumi stack application`);
+                await optsToUse.transform(project, sdmGoal);
             }
 
             if (!(await project.hasFile(".pulumi/Pulumi.yaml"))) {
