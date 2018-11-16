@@ -16,7 +16,6 @@
 
 import {
     GitProject,
-    spawnAndWatch,
     SuccessIsReturn0ErrorFinder,
 } from "@atomist/automation-client";
 import {
@@ -34,6 +33,7 @@ import {
     ProgressTest,
     ReportProgress,
     SdmGoalEvent,
+    spawnAndWatch,
     StagingEnvironment,
     StringCapturingProgressLog,
     testProgressReporter,
