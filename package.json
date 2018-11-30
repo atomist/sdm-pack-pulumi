@@ -32,9 +32,9 @@
     "@atomist/sdm-core": ">=1.0.2"
   },
   "devDependencies": {
-    "@atomist/automation-client": "1.1.0-master.20181113184417",
-    "@atomist/sdm": "1.1.0-master.20181114125422",
-    "@atomist/sdm-core": "1.1.0-master.20181113230355",
+    "@atomist/automation-client": "1.1.0-master.20181129175302",
+    "@atomist/sdm": "1.1.0-master.20181130062949",
+    "@atomist/sdm-core": "1.1.0-master.20181127084329",
     "@types/mocha": "^5.2.5",
     "@types/power-assert": "^1.5.0",
     "espower-typescript": "^9.0.0",
