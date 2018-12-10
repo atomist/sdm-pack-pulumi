@@ -1,6 +1,6 @@
 {
   "name": "@atomist/sdm-pack-pulumi",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Extension Pack for an Atomist SDM to integrate with Pulumi to automation management of cloud infrastructure.",
   "author": {
     "name": "Atomist",
