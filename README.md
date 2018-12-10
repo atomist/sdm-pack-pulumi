@@ -72,7 +72,7 @@ channel in the [Atomist community Slack workspace][slack].
 
 If you find a problem, please create an [issue][].
 
-[issue]: https://github.com/atomist-seeds/sdm-pack/issues
+[issue]: https://github.com/atomist/sdm-pack-pulumi/issues
 
 ## Development
 
